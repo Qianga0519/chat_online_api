@@ -16,6 +16,7 @@ $fsModel = new FriendshipModel();
 // Lấy user_id từ tham số GET
 $userId = isset($_GET['user_id']) ? $_GET['user_id'] : null;
 
+
 if ($userId) {
     // Lấy danh sách gợi ý bạn bè từ phương thức
     $friendSuggestions = $fsModel->getFriendSuggestionsByUserId($userId);

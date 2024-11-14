@@ -104,7 +104,7 @@ class FriendshipModel extends BaseModel
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-<<<<<<< HEAD
+
     function blockUser($user_id, $friend_id)
     {
         // Kiểm tra quan hệ bạn bè hiện có
@@ -127,6 +127,5 @@ class FriendshipModel extends BaseModel
         }
     }
 }
-=======
-}
->>>>>>> master
+
+
