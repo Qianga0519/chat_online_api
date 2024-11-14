@@ -104,4 +104,28 @@ class FriendshipModel extends BaseModel
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    function blockUser($user_id, $friend_id)
+    {
+        // Kiểm tra quan hệ bạn bè hiện có
+        $query = "SELECT * FROM friendships WHERE user_id = ? AND friend_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$user_id, $friend_id]);
+
+        if ($stmt->rowCount() > 0) {
+            // Nếu quan hệ tồn tại, cập nhật trạng thái thành 'blocked'
+            $updateQuery = "UPDATE friendships SET status = 'blocked' WHERE user_id = ? AND friend_id = ?";
+            $updateStmt = $this->conn->prepare($updateQuery);
+            $updateStmt->execute([$user_id, $friend_id]);
+            return ['success' =>  true, 'message' => 'blocked', 'state' => 'update'];
+        } else {
+            // Nếu chưa có quan hệ, tạo mới với trạng thái 'blocked'
+            $insertQuery = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, 'blocked')";
+            $insertStmt = $this->conn->prepare($insertQuery);
+            $insertStmt->execute([$user_id, $friend_id]);
+            return ['success' =>  true, 'message' => 'blocked friend', 'state' => 'create'];
+        }
+    }
 }
+
+
