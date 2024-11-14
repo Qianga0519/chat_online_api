@@ -39,16 +39,49 @@ class FriendshipModel extends BaseModel
         return $stmt->execute();
     }
 
-    // Lấy tất cả bạn bè của một người dùng
-    public function getFriendsByUserId($userId)
+    public function getFriendSuggestionsByUserId($userId)
     {
-        $sql = "SELECT * FROM " . $this->getTable() . " WHERE user_id = :user_id AND status = 'accepted'";
+        // Câu SQL để lấy bạn bè của bạn bè (second-degree friends)
+        $sql = "SELECT m.url AS avatar, f2.id, f2.user_id, f2.friend_id, f2.status, f2.created_at, u.name AS friend_name
+                FROM " . $this->getTable() . " f1
+                JOIN " . $this->getTable() . " f2 ON f1.friend_id = f2.user_id
+                JOIN users u ON u.id = f2.friend_id
+                LEFT JOIN media m ON m.user_id = u.id AND m.is_avatar = 1
+                WHERE f1.user_id = :user_id
+                AND f2.status = 'accepted'
+                AND f2.friend_id != :user_id
+                AND NOT EXISTS (
+                    SELECT 1 FROM " . $this->getTable() . " f3 
+                    WHERE f3.user_id = :user_id AND f3.friend_id = f2.friend_id
+                )";
+    
+        // Chuẩn bị và thực thi câu lệnh SQL
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $userId);
+        $stmt->bindParam(':user_id', $userId); // Để tránh bạn được gợi ý lại
         $stmt->execute();
-
+    
+        // Trả về kết quả dưới dạng mảng
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    // Lấy tất cả bạn bè của một người dùng
+    public function getFriendsByUserId($userId)
+{
+    // Câu SQL đã sửa
+    $sql = "SELECT m.url AS avatar, f.id, f.user_id, f.friend_id, f.status, f.created_at, u.name AS friend_name
+            FROM " . $this->getTable() . " f
+            JOIN users u ON u.id = f.friend_id
+                LEFT JOIN media m ON m.user_id = u.id AND m.is_avatar = 1
+            WHERE f.user_id = :user_id AND f.status = 'accepted'";
+
+    // Chuẩn bị và thực thi câu lệnh SQL
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':user_id', $userId);
+    $stmt->execute();
+
+    // Trả về kết quả dưới dạng mảng
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
     // Lấy tất cả yêu cầu kết bạn của một người dùng
     public function getPendingFriendRequests($userId)
@@ -71,6 +104,7 @@ class FriendshipModel extends BaseModel
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+<<<<<<< HEAD
     function blockUser($user_id, $friend_id)
     {
         // Kiểm tra quan hệ bạn bè hiện có
@@ -93,3 +127,6 @@ class FriendshipModel extends BaseModel
         }
     }
 }
+=======
+}
+>>>>>>> master

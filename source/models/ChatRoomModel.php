@@ -63,6 +63,7 @@ class ChatRoomModel extends BaseModel
             users ON chat_rooms.user_id_2 = users.id
         WHERE 
             chat_rooms.user_id_1 = :user_id OR chat_rooms.user_id_2 = :user_id";
+        // $sql = "SELECT * FROM chat_rooms WHERE user_id_1 = :user_id OR user_id_2 = :user_id";
         $stmt = $this->conn->prepare($sql);
         // Ràng buộc tham số và thực thi
         $stmt->execute([':user_id' => $userId]);

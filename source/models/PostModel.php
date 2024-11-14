@@ -5,8 +5,10 @@ class Post extends BaseModel
     protected function getTable()
     {
         return 'posts'; // Tên bảng
+
     }
 
+    private $table = 'posts';
     public function create(array $data)
     {
         $stmt = $this->conn->prepare("INSERT INTO " . $this->getTable() . " (user_id, content, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
@@ -111,12 +113,12 @@ WHERE
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     public function searchPost($keyword, $offset, $limit, $currentUserId, $postFrom, $selectedOrder)
-{
-    try {
-        $sql = "";
+    {
+        try {
+            $sql = "";
 
-        // Truy vấn bài viết gốc
-        $sql .= "SELECT 
+            // Truy vấn bài viết gốc
+            $sql .= "SELECT 
             avatar_media.url AS urluser, 
             avatar_post.url AS urlpost, 
             users.name, 
@@ -134,26 +136,26 @@ WHERE
         LEFT JOIN media AS avatar_post ON avatar_post.post_id = posts.id AND avatar_post.is_avatar = 0 
         WHERE (posts.content LIKE :keyword OR MATCH(posts.content) AGAINST (:keyword IN BOOLEAN MODE))";
 
-        // Lọc theo `postFrom`
-        if ($postFrom == 1) {
-            // Bài viết từ bạn bè
-            $sql .= " AND posts.user_id IN (
+            // Lọc theo `postFrom`
+            if ($postFrom == 1) {
+                // Bài viết từ bạn bè
+                $sql .= " AND posts.user_id IN (
                 SELECT friend_id FROM friendships 
                 WHERE user_id = :currentUserId AND status = 'accepted'
             )";
-        } elseif ($postFrom == 2) {
-            // Bài viết từ người khác (không phải bạn bè và không phải của user)
-            $sql .= " AND posts.user_id NOT IN (
+            } elseif ($postFrom == 2) {
+                // Bài viết từ người khác (không phải bạn bè và không phải của user)
+                $sql .= " AND posts.user_id NOT IN (
                 SELECT friend_id FROM friendships 
                 WHERE user_id = :currentUserId AND status = 'accepted'
             ) 
             AND posts.user_id != :currentUserId";
-        }
+            }
 
-        $sql .= " GROUP BY posts.id, avatar_media.url, avatar_post.url, users.name, posts.content, posts.created_at";
+            $sql .= " GROUP BY posts.id, avatar_media.url, avatar_post.url, users.name, posts.content, posts.created_at";
 
-        // UNION ALL để bao gồm bài viết chia sẻ
-        $sql .= " UNION ALL 
+            // UNION ALL để bao gồm bài viết chia sẻ
+            $sql .= " UNION ALL 
         SELECT 
             avatar_media.url AS urluser, 
             avatar_post.url AS urlpost, 
@@ -174,48 +176,48 @@ WHERE
         LEFT JOIN media AS avatar_post ON avatar_post.post_id = posts.id AND avatar_post.is_avatar = 0 
         WHERE (posts.content LIKE :keyword OR MATCH(posts.content) AGAINST (:keyword IN BOOLEAN MODE))";
 
-        // Điều kiện cho bài viết chia sẻ theo `postFrom`
-        if ($postFrom == 1) {
-            // Bài chia sẻ từ bạn bè
-            $sql .= " AND post_share.user_share_id IN (
+            // Điều kiện cho bài viết chia sẻ theo `postFrom`
+            if ($postFrom == 1) {
+                // Bài chia sẻ từ bạn bè
+                $sql .= " AND post_share.user_share_id IN (
                 SELECT friend_id FROM friendships 
                 WHERE user_id = :currentUserId AND status = 'accepted'
             )";
-        } elseif ($postFrom == 2) {
-            // Bài chia sẻ từ người khác (không phải bạn bè và không phải của user)
-            $sql .= " AND post_share.user_share_id NOT IN (
+            } elseif ($postFrom == 2) {
+                // Bài chia sẻ từ người khác (không phải bạn bè và không phải của user)
+                $sql .= " AND post_share.user_share_id NOT IN (
                 SELECT friend_id FROM friendships 
                 WHERE user_id = :currentUserId AND status = 'accepted'
             ) 
             AND post_share.user_share_id != :currentUserId";
+            }
+
+            // Sắp xếp theo lựa chọn của người dùng
+            if ($selectedOrder == 1) {
+                $sql .= " ORDER BY post_created_at DESC"; // Thời gian mới nhất
+            } elseif ($selectedOrder == 2) {
+                $sql .= " ORDER BY post_created_at ASC"; // Thời gian cũ nhất
+            }
+
+            $sql .= " LIMIT :offset, :limit";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+
+            if ($postFrom == 1 || $postFrom == 2) {
+                $stmt->bindValue(':currentUserId', $currentUserId, PDO::PARAM_INT);
+            }
+
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Error: " . $e->getMessage();
+            return [];
         }
-
-        // Sắp xếp theo lựa chọn của người dùng
-        if ($selectedOrder == 1) {
-            $sql .= " ORDER BY post_created_at DESC"; // Thời gian mới nhất
-        } elseif ($selectedOrder == 2) {
-            $sql .= " ORDER BY post_created_at ASC"; // Thời gian cũ nhất
-        }
-
-        $sql .= " LIMIT :offset, :limit";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
-
-        if ($postFrom == 1 || $postFrom == 2) {
-            $stmt->bindValue(':currentUserId', $currentUserId, PDO::PARAM_INT);
-        }
-
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        echo "Error: " . $e->getMessage();
-        return [];
     }
-}
 
     // public function searchPost($keyword, $offset, $limit, $currentUserId, $postFrom, $selectedOrder)
     // {
@@ -268,7 +270,7 @@ WHERE
     //             posts.content , 
     //             posts.id as post_id,
     //             post_share.created_at ,
-                
+
     //             (SELECT COUNT(*) FROM post_like WHERE post_like.post_id = posts.id) AS like_count,
     //             (SELECT COUNT(*) FROM post_share WHERE post_share.post_id = posts.id) AS share_count,
     //             'shared' AS post_type,
@@ -285,7 +287,7 @@ WHERE
     //             media as avatar_post ON avatar_post.post_id = posts.id AND avatar_post.is_avatar = 0
     //          LEFT JOIN 
     //             media as avatar ON avatar.post_id = posts.id AND avatar.is_avatar = 1  
-                
+
     //         WHERE posts.content LIKE :keyword OR MATCH(posts.content) AGAINST (:keyword IN BOOLEAN MODE)";
 
     //         // Thay đổi ORDER BY để sử dụng alias 'post_created_at'
@@ -466,5 +468,44 @@ LIMIT
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function createPost($user_id, $content, $media_files = []) {
+        // SQL tạo bài post mới
+        $sql = "INSERT INTO " . $this->table . " (user_id, content, created_at, updated_at) 
+                VALUES (:user_id, :content, NOW(), NOW())";
+
+        // Chuẩn bị câu lệnh SQL
+        $stmt = $this->conn->prepare($sql);
+        
+        // Ràng buộc tham số
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':content', $content);
+
+        // Kiểm tra nếu câu lệnh SQL thực thi thành công
+        if ($stmt->execute()) {
+            $postId = $this->conn->lastInsertId(); // Lấy ID của bài viết vừa tạo
+
+            // Nếu có media_files, thêm vào bảng media
+            if (!empty($media_files)) {
+                foreach ($media_files as $media) {
+                    // Thêm thông tin media vào cơ sở dữ liệu (có thể cần điều chỉnh theo cách lưu media của bạn)
+                    $media_sql = "INSERT INTO media (post_id, url, media_type) VALUES (:post_id, :url, :media_type)";
+                    $media_stmt = $this->conn->prepare($media_sql);
+                    $media_stmt->bindParam(':post_id', $postId);
+                    $media_stmt->bindParam(':url', $media['url']);
+                    $media_stmt->bindParam(':media_type', $media['media_type']);
+                    $media_stmt->execute();
+                }
+            }
+
+            return [
+                'post_id' => $postId,
+                'user_id' => $user_id,
+                'content' => $content,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+        }
+        return false;
     }
 }

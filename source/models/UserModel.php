@@ -105,7 +105,8 @@ class UserModel extends BaseModel
     // Triển khai phương thức read để đọc dữ liệu từ bảng users
     public function getUserById($id)
     {
-        $sql = "SELECT * FROM " . $this->getTable() . " WHERE id = :id";
+        $sql = "SELECT * FROM " . $this->getTable() . " WHERE id = :id ";
+        $sql = "SELECT u.*, m.url FROM " . $this->getTable() . " as u LEFT JOIN media as m ON m.user_id = :id AND m.is_avatar = 1  WHERE u.id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -175,18 +176,19 @@ class UserModel extends BaseModel
             return [];
         }
     }
-    public function checkFriendshipStatus($user_id, $friend_id) {
+    public function checkFriendshipStatus($user_id, $friend_id)
+    {
         $sql = "
         SELECT status FROM friendships 
         WHERE (user_id = :user_id AND friend_id = :friend_id) 
            OR (user_id = :friend_id AND friend_id = :user_id)
         ";
-    
+
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->bindParam(':friend_id', $friend_id, PDO::PARAM_INT);
         $stmt->execute();
-    
+
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result ? $result['status'] : null; // Trả về trạng thái nếu tìm thấy, hoặc null nếu không
     }
@@ -212,12 +214,12 @@ WHERE
     public function make_friend($user_id)
     {
         $sql = "
-        SELECT media.url, f.friend_id, f.user_id AS idf, u.id, u.name, u.email, u.status, f.status AS friendship_status
+      SELECT media.url, f.friend_id, f.user_id AS idf, u.id, u.name, u.email, u.status, f.status AS friendship_status
 FROM friendships f
-LEFT JOIN users u ON f.friend_id = u.id
+LEFT JOIN users u ON f.user_id = u.id
 LEFT JOIN media ON media.user_id = u.id AND media.is_avatar = 1  
 WHERE 
-    f.user_id = :user_id
+    f.friend_id = :user_id
     AND f.status = 'pending'
     ";
 
@@ -337,4 +339,65 @@ WHERE
         $stmt->bindParam(':friend_id', $friendId);
         return $stmt->execute();
     }
+    public function sendFriendRequest($userId, $friendId)
+    {
+        // Kiểm tra nếu đã tồn tại yêu cầu kết bạn
+        $checkSql = "SELECT status FROM friendships WHERE user_id = :user_id AND friend_id = :friend_id";
+        $checkStmt = $this->conn->prepare($checkSql);
+        $checkStmt->bindParam(':user_id', $userId);
+        $checkStmt->bindParam(':friend_id', $friendId);
+        $checkStmt->execute();
+
+        if ($checkStmt->rowCount() > 0) {
+            $friendship = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+            // Kiểm tra trạng thái của yêu cầu
+            if ($friendship['status'] === 'accepted') {
+                return "Đã là bạn bè";
+            } else if ($friendship['status'] === 'pending') {
+                return "Yêu cầu kết bạn đã tồn tại";
+            }
+        }
+
+        // Chèn yêu cầu kết bạn mới
+        $sql = "INSERT INTO friendships (user_id, friend_id, status, created_at) 
+            VALUES (:user_id, :friend_id, 'pending', NOW())";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->bindParam(':friend_id', $friendId);
+
+        return $stmt->execute();
+    }
+    public function cancelFriendship($userId, $friendId)
+{
+    // Kiểm tra nếu mối quan hệ bạn bè đã tồn tại và có trạng thái 'accepted'
+    $checkSql = "SELECT status FROM friendships WHERE (user_id = :user_id AND friend_id = :friend_id) 
+                 OR (user_id = :friend_id AND friend_id = :user_id)";
+    $checkStmt = $this->conn->prepare($checkSql);
+    $checkStmt->bindParam(':user_id', $userId);
+    $checkStmt->bindParam(':friend_id', $friendId);
+    $checkStmt->execute();
+
+    if ($checkStmt->rowCount() > 0) {
+        $friendship = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Kiểm tra xem trạng thái có phải là 'accepted' hay không
+        if ($friendship['status'] === 'accepted') {
+            // Xóa mối quan hệ bạn bè
+            $deleteSql = "DELETE FROM friendships WHERE (user_id = :user_id AND friend_id = :friend_id) 
+                          OR (user_id = :friend_id AND friend_id = :user_id)";
+            $deleteStmt = $this->conn->prepare($deleteSql);
+            $deleteStmt->bindParam(':user_id', $userId);
+            $deleteStmt->bindParam(':friend_id', $friendId);
+
+            return $deleteStmt->execute() ? "Đã hủy kết bạn" : "Có lỗi xảy ra khi hủy kết bạn";
+        } else {
+            return "Không thể hủy kết bạn vì yêu cầu chưa được chấp nhận";
+        }
+    }
+
+    return "Không tìm thấy mối quan hệ bạn bè";
+}
+
 }

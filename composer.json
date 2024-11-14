@@ -1,0 +1,8 @@
+{
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    },
+    "require-dev": {
+        "openswoole/ide-helper": "^4.11"
+    }
+}
