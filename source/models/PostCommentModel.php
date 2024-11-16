@@ -26,8 +26,18 @@ class PostCommentModel extends BaseModel
         $stmt->bindParam(':user_cmt_id', $userCmtId);
         $stmt->bindParam(':content', $content);
         $stmt->bindParam(':order', $nextOrder); // Gán thứ tự mới cho bình luận
+        if ($stmt->execute()) {
+            // Lấy ID của bình luận vừa chèn
+            $lastId = $this->conn->lastInsertId();
+            // Truy vấn để lấy thông tin chi tiết của bình luận vừa chèn
+            $sqlSelect = "SELECT * FROM " . $this->getTable() . " WHERE id = :id";
+            $stmtSelect = $this->conn->prepare($sqlSelect);
+            $stmtSelect->bindParam(':id', $lastId);
+            $stmtSelect->execute();
+            return $stmtSelect->fetch(PDO::FETCH_ASSOC); // Trả về dữ liệu bình luận vừa được tạo
+        }
 
-        return $stmt->execute();
+        return false; // Trả về false nếu không chèn được
     }
 
     // Cập nhật bình luận

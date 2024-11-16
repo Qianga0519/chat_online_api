@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Kiểm tra nếu nội dung chỉ có khoảng trắng
     if (trim($content) === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Vui lòng nhập nội dung nhắn.']);
+        echo json_encode(['success' => false, 'error' => 'Vui lòng nhập nội dung nhắn.', "data"=> $data]);
         exit();
     }
 

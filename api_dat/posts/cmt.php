@@ -5,9 +5,11 @@ header('Access-Control-Allow-Methods: POST'); // Phương thức POST cho API
 header('Access-Control-Allow-Headers: Content-Type'); // Các header được phép
 
 require_once '../../source/models/PostCommentModel.php';
+require_once '../../source/models/PostCommentRepModel.php';
 
 // Tạo đối tượng CommentModel
 $commentModel = new PostCommentModel();
+$commentRepModel = new PostCommentRepModel();
 
 try {
     // Nhận dữ liệu từ yêu cầu POST
@@ -23,8 +25,12 @@ try {
         // Tạo bình luận
         $isCreated = $commentModel->createComment($postId, $userCmtId, $content, $order);
 
-        if ($isCreated) {
-            echo json_encode(["success" => "Bình luận đã được thêm thành công"]);
+        if ($isCreated != false) {
+            // $post_coment = [];
+            // $replies = [];
+            // $replies = $commentRepModel->getRepsByCommentId($isCreated['id']);
+            // $post_coment = $commentModel->getCommentsByPostId($isCreated['post_id']);
+            echo json_encode(["success" => "Bình luận đã được thêm thành công", 'data' => $isCreated]);
         } else {
             echo json_encode(["error" => "Không thể thêm bình luận"]);
         }
