@@ -21,7 +21,23 @@ try {
         $userCmtId = $data['user_cmt_id'];
         $content = $data['content'];
         $order = $data['order'];
+        // Kiểm tra nội dung trống
+        if (empty($content)) {
+            echo json_encode(["status" => "error", "message" => "Nội dung bình luận không được để trống"]);
+            exit;
+        }
 
+        // Kiểm tra độ dài nội dung
+        if (strlen($content) > 500) {
+            echo json_encode(["status" => "error", "message" => "Nội dung bình luận không được vượt quá 500 ký tự"]);
+            exit;
+        }
+
+        // Kiểm tra xem có chứa HTML hay không
+        if (preg_match('/<\/?[a-z][\s\S]*>/i', $content)) {
+            echo json_encode(["status" => "error", "message" => "Nội dung bình luận không được chứa mã HTML"]);
+            exit;
+        }
         // Tạo bình luận
         $isCreated = $commentModel->createComment($postId, $userCmtId, $content, $order);
 

@@ -31,11 +31,11 @@ class WebSocketServer implements MessageComponentInterface
         // Kiểm tra xem người nhận có kết nối hay không
         foreach ($this->clients as $client) {
             if ($client !== $from) { // Không gửi lại tin nhắn cho người gửi
-                // $client->send(json_encode([
-                //     'from' => $data['fromUserId'],
-                //     'content' => $data['content'],
-                // ]));
-                 $client->send(json_encode(['data'=>$data]));
+                $client->send(json_encode([
+                    'from' => $data['fromUserId'],
+                    'content' => $data['content'],
+                ]));
+                //  $client->send(json_encode(['data'=>$data]));
             }
         }
     }
