@@ -35,6 +35,7 @@ class WebSocketServer implements MessageComponentInterface
                     'from' => $data['fromUserId'],
                     'content' => $data['content'],
                 ]));
+                //  $client->send(json_encode(['data'=>$data]));
             }
         }
     }
