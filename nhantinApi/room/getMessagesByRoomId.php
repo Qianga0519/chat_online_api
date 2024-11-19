@@ -47,7 +47,7 @@ if (isset($data['room_id'])) {
             'message' => 'Tài khoản này không còn hoạt động',
             'status' => false
         ]);
-    }
+    }   
 } else {
     echo json_encode([
         'success' => false,
