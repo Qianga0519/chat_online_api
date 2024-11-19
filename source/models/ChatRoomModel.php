@@ -92,4 +92,15 @@ class ChatRoomModel extends BaseModel
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    public function getChatRommId($roomId)
+    {
+        $sql = "SELECT * FROM " . $this->getTable() .  " WHERE 
+        chat_rooms.id = :room_id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':room_id', $roomId);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

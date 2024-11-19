@@ -7,10 +7,12 @@ header('Content-Type: application/json'); // Đặt loại nội dung cho phản
 require_once '../../source/models/MessageModel.php'; // Đảm bảo đã bao gồm MessageModel
 require_once '../../source/models/UserModel.php'; // Đảm bảo đã bao gồm MessageModel
 require_once '../../source/models/TokenModel.php'; // Đảm bảo đã bao gồm MessageModel
+require_once '../../source/models/ChatRoomModel.php'; // Đảm bảo đã bao gồm MessageModel
 
 $messModel = new MessageModel();
 $userModel = new UserModel();
 $tokenModel = new TokenModel();
+$roomModel = new ChatRoomModel();
 
 // Định nghĩa route cho API tạo tin nhắn
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = isset($data['user_id']) ? htmlspecialchars($data['user_id'], ENT_QUOTES, 'UTF-8') : null;
     $content = isset($data['content']) ? htmlspecialchars($data['content'], ENT_QUOTES, 'UTF-8') : null;
     $authToken = isset($data['authToken']) ? htmlspecialchars($data['authToken'], ENT_QUOTES, 'UTF-8') : null;
+
     checkUserStatus($userId);
 
     if (checkToken($authToken) != true) {
@@ -48,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Kiểm tra nếu nội dung chỉ có khoảng trắng
     if (trim($content) === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Vui lòng nhập nội dung nhắn.', "data"=> $data]);
+        echo json_encode(['success' => false, 'error' => 'Vui lòng nhập nội dung nhắn.', "data" => $data]);
         exit();
     }
 
@@ -60,15 +63,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // Tạo tin nhắn mới
-        $messageId = $messModel->createMessage($roomId, $userId, $content);
-        // Trả về mã phản hồi và ID của tin nhắn
-        http_response_code(201); // Created
-        echo json_encode(['success' => true, 'messageId' => $messageId]);
+        $room = $roomModel->getChatRommId($roomId);
+        $user_id_1 = $room['user_id_1'];
+        $user_id_2 = $room['user_id_2'];
+        if ($userModel->getUserById($user_id_1) && $userModel->getUserById($user_id_2)) {
+            try {
+                // Tạo tin nhắn mới
+                $messageId = $messModel->createMessage($roomId, $userId, $content);
+                // Trả về mã phản hồi và ID của tin nhắn
+                http_response_code(201); // Created
+                echo json_encode(['success' => true, 'messageId' => $messageId]);
+            } catch (InvalidArgumentException $e) {
+                http_response_code(400); // Bad Request
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            } catch (Exception $e) {
+                http_response_code(500); // Internal Server Error
+                echo json_encode(['success' => false, 'error' => 'Có lỗi xảy ra trong quá trình tạo tin nhắn.']);
+            }
+        }else{
+            echo json_encode(['success' => false, 'error' => 'Tài khoản này không còn hoạt động!']);
+        }
     } catch (InvalidArgumentException $e) {
-        http_response_code(400); // Bad Request
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    } catch (Exception $e) {
         http_response_code(500); // Internal Server Error
         echo json_encode(['success' => false, 'error' => 'Có lỗi xảy ra trong quá trình tạo tin nhắn.']);
     }
