@@ -219,6 +219,7 @@ WHERE
         }
     }
 
+    
     // public function searchPost($keyword, $offset, $limit, $currentUserId, $postFrom, $selectedOrder)
     // {
     //     try {
@@ -507,5 +508,19 @@ LIMIT
             ];
         }
         return false;
+    }
+    public function deletePostById($id) {
+        $sql = "DELETE FROM posts WHERE id = :id";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+            return $stmt->execute(); // Trả về true nếu xóa thành công
+        } catch (PDOException $e) {
+            // Ghi log lỗi nếu cần
+            error_log("Error deleting post: " . $e->getMessage());
+            return false; // Trả về false nếu có lỗi
+        }
     }
 }
