@@ -18,12 +18,14 @@ if (isset($data->cmt_id) && isset($data->user_id) && isset($data->content) && is
     $order = $data->order;
 
     try {
+        $result = $postModel->createCommentRep($cmtId, $userId, $content, $order);
         // Gọi phương thức để thêm phản hồi
-        if ($postModel->createCommentRep($cmtId, $userId, $content, $order)) {
-            echo json_encode(["success" => true, "message" => "Phản hồi đã được thêm thành công."]);
+        if ($result) {
+            echo json_encode(["success" => true, "message" => "Phản hồi đã được thêm thành công.", 'data'=> $result]);
         } else {
             echo json_encode(["success" => false, "message" => "Không thể thêm phản hồi."]);
         }
+        
     } catch (Exception $e) {
         // Xử lý lỗi
         echo json_encode(["error" => $e->getMessage()]);

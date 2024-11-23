@@ -1,5 +1,5 @@
 <?php
-require_once 'BaseModel.php';   
+require_once 'BaseModel.php';
 class PostCommentRepModel extends BaseModel
 {
     protected function getTable()
@@ -10,6 +10,7 @@ class PostCommentRepModel extends BaseModel
     // Thêm phản hồi cho bình luận
     public function createCommentRep($cmtId, $userId, $content, $order)
     {
+        // Câu lệnh SQL để thêm dữ liệu
         $sql = "INSERT INTO " . $this->getTable() . " (cmt_id, user_id, content, `order`, created_at, updated_at) 
                 VALUES (:cmt_id, :user_id, :content, :order, NOW(), NOW())";
 
@@ -19,7 +20,20 @@ class PostCommentRepModel extends BaseModel
         $stmt->bindParam(':content', $content);
         $stmt->bindParam(':order', $order);
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            // Lấy ID của bản ghi vừa được thêm
+            $lastInsertId = $this->conn->lastInsertId();
+
+            // Lấy dữ liệu của bản ghi vừa thêm
+            $sql = "SELECT * FROM " . $this->getTable() . " WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id', $lastInsertId);
+            $stmt->execute();
+
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        return false; // Trả về false nếu thêm thất bại
     }
 
     // Cập nhật phản hồi
