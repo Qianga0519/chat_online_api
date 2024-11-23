@@ -15,7 +15,7 @@ $mediaModel = new MediaModel();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = isset($_POST['userId']) ? $_POST['userId'] : null;
     $content = isset($_POST['content']) ? $_POST['content'] : null;
-    $uploadDir = '../../uploads/'; // Đảm bảo thư mục này đã tồn tại và có quyền ghi
+    $uploadDir = '../../uploads/image/'; // Đảm bảo thư mục này đã tồn tại và có quyền ghi
 
     // Kiểm tra và tạo thư mục nếu chưa có
     if (!is_dir($uploadDir)) {
